@@ -12,9 +12,13 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from pathlib import Path
 
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 INSTALLED_APPS = [
+    # Django apps
 {% if use_asgi -%}
     'daphne',
 {% endif -%}
@@ -24,10 +28,41 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # 3rd party apps
+    'silk',
+    'corsheaders',
+    'django_cleanup.apps.CleanupConfig',
+
+    # Own apps
     '{{ python_package_name }}.apps.{{ python_package_name.replace("_", " ").title().replace(" ", "") }}Config',
 ]
 
+
+SILKY_AUTHENTICATION = True
+SILKY_AUTHORISATION = True
+
+
+def silky_custom_perms(user):
+    return user.is_superuser
+
+
+def silky_intercept_filter(request):
+    user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
+    is_ping = any(agent in user_agent for agent in ['datadog', 'uptime-kuma', 'uptimerobot'])
+    return not is_ping
+
+
+SILKY_INTERCEPT_FUNC = silky_intercept_filter
+SILKY_PERMISSIONS = silky_custom_perms
+SILKY_MAX_REQUEST_BODY_SIZE = 4096
+SILKY_MAX_RESPONSE_BODY_SIZE = 4096
+SILKY_META = True
+
+
 MIDDLEWARE = [
+    'silk.middleware.SilkyMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -117,6 +152,9 @@ LOGGING = {
         'level': 'DEBUG',
     },
     'loggers': {
+        'silk': {
+            'level': 'INFO',
+        },
         'PIL': {
             'level': 'INFO',
         },
@@ -126,4 +164,34 @@ LOGGING = {
     },
 }
 
+SENTRY_ENVIRONMENT = 'production'
+
 from .local_settings import *
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CORS_ALLOWED_ORIGINS = []
+CORS_ALLOWED_ORIGIN_REGEXES = ['.*']
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'baggage',
+    'sentry-trace',
+    'Access-Control-Allow-Origin',
+]
+
+sentry_sdk.init(
+    dsn=SENTRY_DSN,
+    integrations=[DjangoIntegration()],
+    traces_sample_rate=1.0,
+    send_default_pii=True,
+    environment=SENTRY_ENVIRONMENT,
+    release=os.environ.get('VERSION'),
+)
