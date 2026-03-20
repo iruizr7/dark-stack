@@ -12,6 +12,9 @@ This project was bootstrapped from the Dark Stack template.
 {% if use_asgi -%}
 - ASGI/Daphne is enabled for the backend.
 {% endif -%}
+{% if use_celery -%}
+- Celery is enabled with Redis broker and Django-backed results/beat.
+{% endif -%}
 
 ## Quick Start
 
@@ -21,6 +24,15 @@ docker compose -f docker-compose-dev.yaml up -d
 uv run python backend/manage.py migrate
 uv run python backend/manage.py runserver
 ```
+
+{% if use_celery -%}
+## Celery
+
+```bash
+cd backend
+./launch_dev_celery.sh
+```
+{% endif -%}
 
 {% if include_frontend -%}
 ## Frontend

@@ -11,6 +11,8 @@ _exclude:
   - "scripts"
   - "scripts/**"
   - "README.md"
+  - "{% if not use_celery %}backend/launch_dev_celery.sh{% else %}__keep_launch_dev_celery__.sh{% endif %}"
+  - "{% if not use_celery %}backend/main/celery.py{% else %}__keep_main_celery__.py{% endif %}"
   - "{% if not include_frontend %}frontend{% else %}__keep_frontend__{% endif %}"
   - "{% if not include_frontend %}frontend/**{% else %}__keep_frontend__/**{% endif %}"
 
@@ -34,6 +36,11 @@ python_package_name:
 use_asgi:
   type: bool
   help: Configure Django to run through ASGI/Daphne.
+  default: false
+
+use_celery:
+  type: bool
+  help: Configure Celery with Redis broker and Django-backed results/beat.
   default: false
 
 include_frontend:

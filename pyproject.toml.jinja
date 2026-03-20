@@ -4,10 +4,18 @@ version = "0.1.0"
 description = "{{ project_name }}"
 requires-python = ">=3.14"
 dependencies = [
+{% if use_celery -%}
+    "celery>=5.6.2",
+    "channels-redis>=4.3.0",
+{% endif -%}
 {% if use_asgi -%}
     "channels[daphne]>=4.3.2",
 {% endif -%}
     "django>=6.0.3",
+{% if use_celery -%}
+    "django-celery-beat>=2.9.0",
+    "django-celery-results>=2.6.0",
+{% endif -%}
     "django-cleanup>=9.0.0",
     "django-cors-headers>=4.9.0",
     "django-silk>=5.5.0",

@@ -1,5 +1,13 @@
 version: '2'
 services:
+{% if use_celery -%}
+  valkey:
+    image: valkey/valkey:9
+    ports:
+      - "6379:6379"
+    command: ["valkey-server", "--requirepass", "django"]
+
+{% endif -%}
   postgresql:
     image: postgres:17
     ports:

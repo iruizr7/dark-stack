@@ -10,8 +10,10 @@ Usage:
 Scenarios:
   backend-only
   backend-only-asgi
+  backend-only-celery
   backend-frontend
   backend-frontend-asgi
+  backend-frontend-asgi-celery
   all
 EOF
 }
@@ -128,6 +130,7 @@ configure_project_database() {
 run_backend_checks() {
   local project_dir="$1"
   local use_asgi="$2"
+  local use_celery="$3"
 
   echo "==> Running backend checks"
   uv run --directory "$project_dir" python backend/manage.py check
@@ -135,6 +138,9 @@ run_backend_checks() {
     uv run --directory "$project_dir" python -c "import sys; sys.path.insert(0, 'backend'); from main.asgi import application; print(type(application).__name__)" | grep -qx 'ProtocolTypeRouter'
   else
     uv run --directory "$project_dir" python -c "import sys; sys.path.insert(0, 'backend'); from main.asgi import application; print(type(application).__name__)" | grep -qx 'ASGIHandler'
+  fi
+  if [[ "$use_celery" == "true" ]]; then
+    uv run --directory "$project_dir/backend" python -c "from main.celery import app; print(app.main); print(app.conf.broker_url)" | grep -q 'redis://:django@localhost:6379/0'
   fi
   uv run --directory "$project_dir" python backend/manage.py migrate --noinput
   uv run --directory "$project_dir" python backend/manage.py test
@@ -166,6 +172,7 @@ generate_project() {
   local project_dir="$1"
   local include_frontend="$2"
   local use_asgi="$3"
+  local use_celery="$4"
 
   local copier_args=(
     uvx copier copy --trust "$REPO_ROOT" "$project_dir"
@@ -173,6 +180,7 @@ generate_project() {
     -d project_slug="template-smoke-test"
     -d python_package_name="template_smoke_test"
     -d use_asgi="$use_asgi"
+    -d use_celery="$use_celery"
     -d include_frontend="$include_frontend"
     -d frontend_url="http://localhost:8100"
     -d backend_url="http://localhost:8000"
@@ -192,6 +200,7 @@ run_scenario() {
   local scenario="$1"
   local include_frontend="$2"
   local use_asgi="$3"
+  local use_celery="$4"
 
   (
     set -euo pipefail
@@ -211,10 +220,10 @@ run_scenario() {
     echo "==> Scenario: $scenario"
     echo "==> Temporary directory: $temp_dir"
 
-    generate_project "$project_dir" "$include_frontend" "$use_asgi"
+    generate_project "$project_dir" "$include_frontend" "$use_asgi" "$use_celery"
     create_smoke_database "$database_name"
     configure_project_database "$project_dir" "$database_name"
-    run_backend_checks "$project_dir" "$use_asgi"
+    run_backend_checks "$project_dir" "$use_asgi" "$use_celery"
 
     if [[ "$include_frontend" == "true" ]]; then
       run_frontend_checks "$project_dir"
@@ -241,22 +250,30 @@ main() {
 
   case "$scenario" in
     backend-only)
-      run_scenario "backend-only" "false" "false"
+      run_scenario "backend-only" "false" "false" "false"
       ;;
     backend-only-asgi)
-      run_scenario "backend-only-asgi" "false" "true"
+      run_scenario "backend-only-asgi" "false" "true" "false"
+      ;;
+    backend-only-celery)
+      run_scenario "backend-only-celery" "false" "false" "true"
       ;;
     backend-frontend)
-      run_scenario "backend-frontend" "true" "false"
+      run_scenario "backend-frontend" "true" "false" "false"
       ;;
     backend-frontend-asgi)
-      run_scenario "backend-frontend-asgi" "true" "true"
+      run_scenario "backend-frontend-asgi" "true" "true" "false"
+      ;;
+    backend-frontend-asgi-celery)
+      run_scenario "backend-frontend-asgi-celery" "true" "true" "true"
       ;;
     all)
-      run_scenario "backend-only" "false" "false"
-      run_scenario "backend-only-asgi" "false" "true"
-      run_scenario "backend-frontend" "true" "false"
-      run_scenario "backend-frontend-asgi" "true" "true"
+      run_scenario "backend-only" "false" "false" "false"
+      run_scenario "backend-only-asgi" "false" "true" "false"
+      run_scenario "backend-only-celery" "false" "false" "true"
+      run_scenario "backend-frontend" "true" "false" "false"
+      run_scenario "backend-frontend-asgi" "true" "true" "false"
+      run_scenario "backend-frontend-asgi-celery" "true" "true" "true"
       ;;
     *)
       usage
