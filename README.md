@@ -28,16 +28,16 @@ Interactive:
 uvx copier copy --trust /path/to/dark-stack /path/to/new-project
 ```
 
-Gigtonic-like example:
+Gintonic-like example:
 
 ```bash
 uvx copier copy --trust /path/to/dark-stack /path/to/new-project \
-  -d project_name="Gigtonic Platform" \
-  -d project_slug="gigtonic-platform" \
-  -d python_package_name="gigtonic_platform" \
+  -d project_name="Gintonic Platform" \
+  -d project_slug="gintonic-platform" \
+  -d python_package_name="gintonic_platform" \
   -d include_frontend=true \
-  -d frontend_app_name="gigtonic" \
-  -d capacitor_app_id="com.example.gigtonic" \
+  -d frontend_app_name="gintonic" \
+  -d capacitor_app_id="com.example.gintonic" \
   -d frontend_url="http://localhost:8100" \
   -d backend_url="http://localhost:8000"
 ```
