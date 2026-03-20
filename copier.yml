@@ -1,5 +1,7 @@
 _answers_file: .copier-answers.yml
 _templates_suffix: .jinja
+_tasks:
+  - mv .project-readme.md README.md
 _exclude:
   - ".git"
   - ".DS_Store"
@@ -8,7 +10,7 @@ _exclude:
   - "copier.yml"
   - "scripts"
   - "scripts/**"
-  - "TEMPLATE-README.md"
+  - "README.md"
   - "{% if not include_frontend %}frontend{% else %}__keep_frontend__{% endif %}"
   - "{% if not include_frontend %}frontend/**{% else %}__keep_frontend__/**{% endif %}"
 
