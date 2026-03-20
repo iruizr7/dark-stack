@@ -11,6 +11,9 @@ from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
 from django.test import TestCase, override_settings
+{% if enable_push_notifications %}
+from fcm_django.models import FCMDevice
+{% endif %}
 
 from main.utils.auth.account_adapter import ProjectAccountAdapter
 
@@ -192,3 +195,89 @@ class AuthApiTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].subject, 'Reset your password')
         self.assertIn('/api/auth/password/reset/confirm/', mail.outbox[0].body)
+
+{% if enable_push_notifications and allow_anonymous_fcm_tokens %}
+    def test_fcm_registration_creates_device_without_authentication(self):
+        response = self.client.post(
+            '/api/fcm',
+            {
+                'registration_id': 'anon-registration-token',
+                'device_id': 'anon-device-id',
+                'type': 'android',
+                'name': 'Pixel test',
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+
+        device = FCMDevice.objects.get(registration_id='anon-registration-token')
+        self.assertEqual(device.device_id, 'anon-device-id')
+        self.assertEqual(device.type, 'android')
+        self.assertIsNone(device.user)
+
+    def test_fcm_registration_reassociates_existing_token_when_user_authenticates(self):
+        anonymous_response = self.client.post(
+            '/api/fcm',
+            {
+                'registration_id': 'shared-registration-token',
+                'device_id': 'shared-device-id',
+                'type': 'android',
+                'name': 'Pixel test',
+            },
+        )
+        self.assertEqual(anonymous_response.status_code, 201)
+
+        device = FCMDevice.objects.get(registration_id='shared-registration-token')
+        self.assertIsNone(device.user)
+
+        user = get_user_model().objects.create_user(
+            username='fcm-user',
+            email='fcm-user@example.com',
+            password='VeryStrongPassword123!',
+        )
+        EmailAddress.objects.create(
+            user=user,
+            email=user.email,
+            verified=True,
+            primary=True,
+        )
+
+        login_response = self.client.post(
+            '/api/auth/login/',
+            {
+                'email': user.email,
+                'password': 'VeryStrongPassword123!',
+            },
+        )
+        self.assertEqual(login_response.status_code, 200)
+        token = login_response.json()['key']
+
+        authenticated_response = self.client.post(
+            '/api/fcm',
+            {
+                'registration_id': 'shared-registration-token',
+                'device_id': 'shared-device-id',
+                'type': 'android',
+                'name': 'Pixel test',
+            },
+            HTTP_AUTHORIZATION=f'Token {token}',
+        )
+
+        self.assertEqual(authenticated_response.status_code, 200)
+
+        device.refresh_from_db()
+        self.assertEqual(device.user, user)
+{% elif enable_push_notifications %}
+    def test_fcm_registration_requires_authentication_when_anonymous_mode_is_disabled(self):
+        response = self.client.post(
+            '/api/fcm',
+            {
+                'registration_id': 'anon-registration-token',
+                'device_id': 'anon-device-id',
+                'type': 'android',
+                'name': 'Pixel test',
+            },
+        )
+
+        self.assertEqual(response.status_code, 401)
+{% endif %}

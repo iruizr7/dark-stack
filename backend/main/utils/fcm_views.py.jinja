@@ -1,0 +1,6 @@
+from fcm_django.api.rest_framework import FCMDeviceViewSet
+from rest_framework.permissions import AllowAny
+
+
+class ProjectFCMViewSet(FCMDeviceViewSet):
+    permission_classes = (AllowAny,)

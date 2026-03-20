@@ -23,6 +23,11 @@ from dj_rest_auth.registration.views import (
     ResendEmailVerificationView,
     VerifyEmailView,
 )
+{% if enable_push_notifications and allow_anonymous_fcm_tokens -%}
+from main.utils.fcm_views import ProjectFCMViewSet
+{% elif enable_push_notifications -%}
+from fcm_django.api.rest_framework import FCMDeviceAuthorizedViewSet
+{% endif -%}
 
 from main.views import PasswordResetConfirmRedirectView
 
@@ -39,6 +44,11 @@ urlpatterns = [
     path('api/auth/reg/', RegisterView.as_view(), name='rest_register'),
     path('api/auth/reg/verify-email/', VerifyEmailView.as_view(), name='rest_verify_email'),
     path('api/auth/reg/resend-email/', ResendEmailVerificationView.as_view(), name='rest_resend_email'),
+{% if enable_push_notifications and allow_anonymous_fcm_tokens -%}
+    path('api/fcm', ProjectFCMViewSet.as_view({'post': 'create'}), name='create_fcm_device'),
+{% elif enable_push_notifications -%}
+    path('api/fcm', FCMDeviceAuthorizedViewSet.as_view({'post': 'create'}), name='create_fcm_device'),
+{% endif -%}
 ]
 
 if settings.DEBUG:

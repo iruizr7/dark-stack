@@ -15,6 +15,7 @@ _exclude:
   - "{% if not use_celery %}backend/main/celery.py{% else %}__keep_main_celery__.py{% endif %}"
   - "{% if not include_frontend %}frontend{% else %}__keep_frontend__{% endif %}"
   - "{% if not include_frontend %}frontend/**{% else %}__keep_frontend__/**{% endif %}"
+  - "{% if not enable_push_notifications or not allow_anonymous_fcm_tokens %}backend/main/utils/fcm_views.py{% else %}__keep_fcm_views__.py{% endif %}"
 
 project_name:
   type: str
@@ -69,3 +70,14 @@ backend_url:
   type: str
   help: Backend URL used by local settings.
   default: http://localhost:8000
+
+enable_push_notifications:
+  type: bool
+  help: Include Django FCM / Firebase push notification support.
+  default: false
+
+allow_anonymous_fcm_tokens:
+  type: bool
+  help: Allow FCM tokens to be registered before login using the same endpoint.
+  default: false
+  when: "{{ enable_push_notifications }}"

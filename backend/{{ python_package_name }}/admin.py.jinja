@@ -1,8 +1,19 @@
+import logging
+
 from django.contrib import admin
+from django.contrib import messages as admin_messages
+from django.contrib.admin.sites import NotRegistered
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.translation import gettext_lazy as _
+{% if enable_push_notifications -%}
+from fcm_django.admin import DeviceAdmin as FCMDeviceAdmin
+from fcm_django.models import FCMDevice
+from firebase_admin.messaging import Message, Notification
+{% endif -%}
 
 from {{ python_package_name }}.models import User
+
+logger = logging.getLogger(__name__)
 
 
 @admin.register(User)
@@ -33,3 +44,48 @@ class UserAdmin(DjangoUserAdmin):
         ),
         (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
     )
+
+
+{% if enable_push_notifications -%}
+class FCMAdmin(FCMDeviceAdmin):
+    actions = ('send_test_message',)
+
+    @admin.action(description=_('Send test notification'))
+    def send_test_message(self, request, queryset):
+        success_count = 0
+        failure_count = 0
+
+        for device in queryset:
+            try:
+                response = device.send_message(
+                    Message(
+                        notification=Notification(
+                            title='Template test notification',
+                            body='Push notifications are configured correctly.',
+                        ),
+                        data={'type': 'test'},
+                    )
+                )
+                if response is not None:
+                    success_count += 1
+                else:
+                    failure_count += 1
+            except Exception:
+                failure_count += 1
+                logger.exception('Error sending test notification to FCM device %s', device.pk)
+
+        level = admin_messages.SUCCESS if failure_count == 0 else admin_messages.WARNING
+        self.message_user(
+            request,
+            f'Push sent to {success_count} devices. {failure_count} failed.',
+            level=level,
+        )
+
+
+try:
+    admin.site.unregister(FCMDevice)
+except NotRegistered:
+    pass
+
+admin.site.register(FCMDevice, FCMAdmin)
+{% endif -%}

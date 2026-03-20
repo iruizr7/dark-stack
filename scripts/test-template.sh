@@ -11,6 +11,8 @@ Scenarios:
   backend-only
   backend-only-asgi
   backend-only-celery
+  backend-only-push
+  backend-only-push-anon
   backend-frontend
   backend-frontend-asgi
   backend-frontend-asgi-celery
@@ -173,6 +175,8 @@ generate_project() {
   local include_frontend="$2"
   local use_asgi="$3"
   local use_celery="$4"
+  local enable_push_notifications="$5"
+  local allow_anonymous_fcm_tokens="$6"
 
   local copier_args=(
     uvx copier copy --trust "$REPO_ROOT" "$project_dir"
@@ -182,6 +186,8 @@ generate_project() {
     -d use_asgi="$use_asgi"
     -d use_celery="$use_celery"
     -d include_frontend="$include_frontend"
+    -d enable_push_notifications="$enable_push_notifications"
+    -d allow_anonymous_fcm_tokens="$allow_anonymous_fcm_tokens"
     -d frontend_url="http://localhost:8100"
     -d backend_url="http://localhost:8000"
   )
@@ -201,6 +207,8 @@ run_scenario() {
   local include_frontend="$2"
   local use_asgi="$3"
   local use_celery="$4"
+  local enable_push_notifications="$5"
+  local allow_anonymous_fcm_tokens="$6"
 
   (
     set -euo pipefail
@@ -220,7 +228,7 @@ run_scenario() {
     echo "==> Scenario: $scenario"
     echo "==> Temporary directory: $temp_dir"
 
-    generate_project "$project_dir" "$include_frontend" "$use_asgi" "$use_celery"
+    generate_project "$project_dir" "$include_frontend" "$use_asgi" "$use_celery" "$enable_push_notifications" "$allow_anonymous_fcm_tokens"
     create_smoke_database "$database_name"
     configure_project_database "$project_dir" "$database_name"
     run_backend_checks "$project_dir" "$use_asgi" "$use_celery"
@@ -250,30 +258,38 @@ main() {
 
   case "$scenario" in
     backend-only)
-      run_scenario "backend-only" "false" "false" "false"
+      run_scenario "backend-only" "false" "false" "false" "false" "false"
       ;;
     backend-only-asgi)
-      run_scenario "backend-only-asgi" "false" "true" "false"
+      run_scenario "backend-only-asgi" "false" "true" "false" "false" "false"
       ;;
     backend-only-celery)
-      run_scenario "backend-only-celery" "false" "false" "true"
+      run_scenario "backend-only-celery" "false" "false" "true" "false" "false"
+      ;;
+    backend-only-push)
+      run_scenario "backend-only-push" "false" "false" "false" "true" "false"
+      ;;
+    backend-only-push-anon)
+      run_scenario "backend-only-push-anon" "false" "false" "false" "true" "true"
       ;;
     backend-frontend)
-      run_scenario "backend-frontend" "true" "false" "false"
+      run_scenario "backend-frontend" "true" "false" "false" "false" "false"
       ;;
     backend-frontend-asgi)
-      run_scenario "backend-frontend-asgi" "true" "true" "false"
+      run_scenario "backend-frontend-asgi" "true" "true" "false" "false" "false"
       ;;
     backend-frontend-asgi-celery)
-      run_scenario "backend-frontend-asgi-celery" "true" "true" "true"
+      run_scenario "backend-frontend-asgi-celery" "true" "true" "true" "false" "false"
       ;;
     all)
-      run_scenario "backend-only" "false" "false" "false"
-      run_scenario "backend-only-asgi" "false" "true" "false"
-      run_scenario "backend-only-celery" "false" "false" "true"
-      run_scenario "backend-frontend" "true" "false" "false"
-      run_scenario "backend-frontend-asgi" "true" "true" "false"
-      run_scenario "backend-frontend-asgi-celery" "true" "true" "true"
+      run_scenario "backend-only" "false" "false" "false" "false" "false"
+      run_scenario "backend-only-asgi" "false" "true" "false" "false" "false"
+      run_scenario "backend-only-celery" "false" "false" "true" "false" "false"
+      run_scenario "backend-only-push" "false" "false" "false" "true" "false"
+      run_scenario "backend-only-push-anon" "false" "false" "false" "true" "true"
+      run_scenario "backend-frontend" "true" "false" "false" "false" "false"
+      run_scenario "backend-frontend-asgi" "true" "true" "false" "false" "false"
+      run_scenario "backend-frontend-asgi-celery" "true" "true" "true" "false" "false"
       ;;
     *)
       usage

@@ -38,6 +38,9 @@ EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
 EMAIL_PORT = '1025'
 DEFAULT_FROM_EMAIL = 'Project Name <noreply@example.com>'
+{% if enable_push_notifications -%}
+FIREBASE_SERVICE_ACCOUNT_FILE = None
+{% endif -%}
 SENTRY_DSN = ''
 SENTRY_ENVIRONMENT = 'local-dev'
 SILKY_INTERCEPT_PERCENT = 100
