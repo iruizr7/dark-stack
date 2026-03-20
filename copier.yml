@@ -31,6 +31,11 @@ python_package_name:
   help: Django app package name in snake_case.
   default: "{{ project_slug | replace('-', '_') }}"
 
+use_asgi:
+  type: bool
+  help: Configure Django to run through ASGI/Daphne.
+  default: false
+
 include_frontend:
   type: bool
   help: Include the Ionic frontend.

@@ -9,8 +9,19 @@ https://docs.djangoproject.com/en/6.0/howto/deployment/asgi/
 
 import os
 
+{% if use_asgi -%}
+from channels.routing import ProtocolTypeRouter
+{% endif -%}
 from django.core.asgi import get_asgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'main.settings')
 
+{% if use_asgi -%}
+django_asgi_app = get_asgi_application()
+
+application = ProtocolTypeRouter({
+    'http': django_asgi_app,
+})
+{% else -%}
 application = get_asgi_application()
+{% endif -%}

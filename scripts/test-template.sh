@@ -9,7 +9,9 @@ Usage:
 
 Scenarios:
   backend-only
+  backend-only-asgi
   backend-frontend
+  backend-frontend-asgi
   all
 EOF
 }
@@ -107,9 +109,15 @@ ensure_postgres() {
 
 run_backend_checks() {
   local project_dir="$1"
+  local use_asgi="$2"
 
   echo "==> Running backend checks"
   uv run --directory "$project_dir" python backend/manage.py check
+  if [[ "$use_asgi" == "true" ]]; then
+    uv run --directory "$project_dir" python -c "import sys; sys.path.insert(0, 'backend'); from main.asgi import application; print(type(application).__name__)" | grep -qx 'ProtocolTypeRouter'
+  else
+    uv run --directory "$project_dir" python -c "import sys; sys.path.insert(0, 'backend'); from main.asgi import application; print(type(application).__name__)" | grep -qx 'ASGIHandler'
+  fi
   uv run --directory "$project_dir" python backend/manage.py migrate --noinput
   uv run --directory "$project_dir" python backend/manage.py test
 }
@@ -139,12 +147,14 @@ run_frontend_checks() {
 generate_project() {
   local project_dir="$1"
   local include_frontend="$2"
+  local use_asgi="$3"
 
   local copier_args=(
     uvx copier copy --trust "$REPO_ROOT" "$project_dir"
     -d project_name="Template Smoke Test"
     -d project_slug="template-smoke-test"
     -d python_package_name="template_smoke_test"
+    -d use_asgi="$use_asgi"
     -d include_frontend="$include_frontend"
     -d frontend_url="http://localhost:8100"
     -d backend_url="http://localhost:8000"
@@ -163,6 +173,7 @@ generate_project() {
 run_scenario() {
   local scenario="$1"
   local include_frontend="$2"
+  local use_asgi="$3"
 
   (
     set -euo pipefail
@@ -180,8 +191,8 @@ run_scenario() {
     echo "==> Scenario: $scenario"
     echo "==> Temporary directory: $temp_dir"
 
-    generate_project "$project_dir" "$include_frontend"
-    run_backend_checks "$project_dir"
+    generate_project "$project_dir" "$include_frontend" "$use_asgi"
+    run_backend_checks "$project_dir" "$use_asgi"
 
     if [[ "$include_frontend" == "true" ]]; then
       run_frontend_checks "$project_dir"
@@ -208,14 +219,22 @@ main() {
 
   case "$scenario" in
     backend-only)
-      run_scenario "backend-only" "false"
+      run_scenario "backend-only" "false" "false"
+      ;;
+    backend-only-asgi)
+      run_scenario "backend-only-asgi" "false" "true"
       ;;
     backend-frontend)
-      run_scenario "backend-frontend" "true"
+      run_scenario "backend-frontend" "true" "false"
+      ;;
+    backend-frontend-asgi)
+      run_scenario "backend-frontend-asgi" "true" "true"
       ;;
     all)
-      run_scenario "backend-only" "false"
-      run_scenario "backend-frontend" "true"
+      run_scenario "backend-only" "false" "false"
+      run_scenario "backend-only-asgi" "false" "true"
+      run_scenario "backend-frontend" "true" "false"
+      run_scenario "backend-frontend-asgi" "true" "true"
       ;;
     *)
       usage

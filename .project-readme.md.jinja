@@ -9,6 +9,9 @@ This project was bootstrapped from the Dark Stack template.
 - `frontend/`: Ionic project.
 {% endif -%}
 - `docker-compose-dev.yaml`: local PostgreSQL service.
+{% if use_asgi -%}
+- ASGI/Daphne is enabled for the backend.
+{% endif -%}
 
 ## Quick Start
 

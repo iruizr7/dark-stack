@@ -16,6 +16,7 @@ It is designed as an initial project bootstrapper, not as a long-term parent tem
 
 - backend-only project
 - backend + frontend project
+- optional ASGI/Daphne backend setup
 - customizable project name and slug
 - customizable Python package name
 - customizable frontend app name and Capacitor app id when frontend is enabled
@@ -35,6 +36,7 @@ uvx copier copy --trust /path/to/dark-stack /path/to/new-project \
   -d project_name="Gintonic Platform" \
   -d project_slug="gintonic-platform" \
   -d python_package_name="gintonic_platform" \
+  -d use_asgi=true \
   -d include_frontend=true \
   -d frontend_app_name="gintonic" \
   -d capacitor_app_id="com.example.gintonic" \
@@ -50,7 +52,9 @@ Run template smoke tests:
 
 ```bash
 ./scripts/test-template.sh backend-only
+./scripts/test-template.sh backend-only-asgi
 ./scripts/test-template.sh backend-frontend
+./scripts/test-template.sh backend-frontend-asgi
 ./scripts/test-template.sh all
 ```
 

@@ -15,6 +15,9 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 INSTALLED_APPS = [
+{% if use_asgi -%}
+    'daphne',
+{% endif -%}
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -52,6 +55,9 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'main.wsgi.application'
+{% if use_asgi -%}
+ASGI_APPLICATION = 'main.asgi.application'
+{% endif -%}
 
 DATABASES = {
     'default': {
