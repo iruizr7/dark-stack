@@ -15,6 +15,10 @@ from {{ python_package_name }}.models import User
 
 logger = logging.getLogger(__name__)
 
+admin.site.site_header = '{{ project_name }} Administration'
+admin.site.site_title = '{{ project_name }} Administration'
+admin.site.index_title = '{{ project_name }} Administration'
+
 
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
