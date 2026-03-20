@@ -1,0 +1,20 @@
+DEBUG = True
+ALLOWED_HOSTS = ['*']
+INTERNAL_IPS = []
+SECRET_KEY = 'change-me'
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'django',
+        'USER': 'django',
+        'PASSWORD': 'django',
+        'HOST': 'localhost',
+        'PORT': '',
+        "OPTIONS": {
+            "pool": True,
+        },
+    }
+}
+FRONTEND_URL = '{{ frontend_url }}'
+BACKEND_URL = '{{ backend_url }}'

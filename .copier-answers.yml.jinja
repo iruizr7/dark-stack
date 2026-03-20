@@ -1,0 +1,12 @@
+# Changes here will be overwritten by Copier.
+_src_path: {{ _src_path }}
+project_name: {{ project_name }}
+project_slug: {{ project_slug }}
+python_package_name: {{ python_package_name }}
+include_frontend: {{ include_frontend }}
+frontend_url: {{ frontend_url }}
+backend_url: {{ backend_url }}
+{% if include_frontend -%}
+frontend_app_name: {{ frontend_app_name }}
+capacitor_app_id: {{ capacitor_app_id }}
+{% endif -%}

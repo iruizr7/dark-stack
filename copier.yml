@@ -1,0 +1,57 @@
+_answers_file: .copier-answers.yml
+_templates_suffix: .jinja
+_exclude:
+  - ".git"
+  - ".DS_Store"
+  - "__pycache__"
+  - "*.py[co]"
+  - "copier.yml"
+  - "scripts"
+  - "scripts/**"
+  - "TEMPLATE-README.md"
+  - "{% if not include_frontend %}frontend{% else %}__keep_frontend__{% endif %}"
+  - "{% if not include_frontend %}frontend/**{% else %}__keep_frontend__/**{% endif %}"
+
+project_name:
+  type: str
+  help: Human-readable project name.
+
+project_slug:
+  type: str
+  help: Project slug in kebab-case.
+  validator: >-
+    {% if not (project_slug | regex_search('^[a-z][a-z0-9-]+$')) %}
+    project_slug must start with a letter and contain only lowercase letters, digits, and dashes.
+    {% endif %}
+
+python_package_name:
+  type: str
+  help: Django app package name in snake_case.
+  default: "{{ project_slug | replace('-', '_') }}"
+
+include_frontend:
+  type: bool
+  help: Include the Ionic frontend.
+  default: false
+
+frontend_app_name:
+  type: str
+  help: Frontend app name used by Ionic and npm.
+  default: "{{ project_slug }}"
+  when: "{{ include_frontend }}"
+
+capacitor_app_id:
+  type: str
+  help: Capacitor application identifier.
+  default: "com.example.{{ project_slug | replace('-', '') }}"
+  when: "{{ include_frontend }}"
+
+frontend_url:
+  type: str
+  help: Frontend URL used by local settings.
+  default: http://localhost:8100
+
+backend_url:
+  type: str
+  help: Backend URL used by local settings.
+  default: http://localhost:8000

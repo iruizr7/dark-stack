@@ -1,0 +1,30 @@
+# {{ project_name }}
+
+This project was bootstrapped from the Dark Stack template.
+
+## Structure
+
+- `backend/`: Django project.
+{% if include_frontend -%}
+- `frontend/`: Ionic project.
+{% endif -%}
+- `docker-compose-dev.yaml`: local PostgreSQL service.
+
+## Quick Start
+
+```bash
+uv sync
+docker compose -f docker-compose-dev.yaml up -d
+uv run python backend/manage.py migrate
+uv run python backend/manage.py runserver
+```
+
+{% if include_frontend -%}
+## Frontend
+
+```bash
+cd frontend
+npm install
+npm start
+```
+{% endif -%}

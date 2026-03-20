@@ -1,0 +1,5 @@
+from django.apps import AppConfig
+
+
+class {{ python_package_name.replace("_", " ").title().replace(" ", "") }}Config(AppConfig):
+    name = '{{ python_package_name }}'

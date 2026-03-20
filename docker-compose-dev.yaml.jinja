@@ -1,0 +1,11 @@
+version: '2'
+services:
+  postgresql:
+    image: postgres:17
+    ports:
+      - "5432:5432"
+    environment:
+      - "POSTGRES_USER=django"
+      - "POSTGRES_PASSWORD=django"
+      - "POSTGRES_DB=django"
+      - "PGDATA=/var/lib/postgresql/data/pgdata"
