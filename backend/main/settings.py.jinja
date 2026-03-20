@@ -31,10 +31,19 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
 
     # 3rd party apps
     'silk',
     'corsheaders',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
+    'templated_email',
     'django_cleanup.apps.CleanupConfig',
 {% if use_celery -%}
     'django_celery_results',
@@ -65,16 +74,34 @@ SILKY_PERMISSIONS = silky_custom_perms
 SILKY_MAX_REQUEST_BODY_SIZE = 4096
 SILKY_MAX_RESPONSE_BODY_SIZE = 4096
 SILKY_META = True
+
+SITE_ID = 1
+
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_ADAPTER = 'main.utils.auth.account_adapter.ProjectAccountAdapter'
+TEMPLATED_EMAIL_TEMPLATE_DIR = ''
+TEMPLATED_EMAIL_FILE_EXTENSION = 'txt'
 {% if use_celery -%}
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 CELERY_RESULT_EXTENDED = True
 {% endif -%}
 
+REST_AUTH = {
+    'REGISTER_SERIALIZER': 'main.utils.auth.custom_register_serializer.CustomRegisterSerializer',
+    'USER_DETAILS_SERIALIZER': 'main.utils.auth.auth_user_serializer.UserDetailsSerializer',
+    'LOGOUT_ON_PASSWORD_CHANGE': True,
+    'SESSION_LOGIN': False,
+}
+
 
 MIDDLEWARE = [
     'silk.middleware.SilkyMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -82,6 +109,11 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
 ROOT_URLCONF = 'main.urls'
@@ -178,6 +210,16 @@ LOGGING = {
             'level': 'INFO',
         },
     },
+}
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
 }
 
 SENTRY_ENVIRONMENT = 'production'

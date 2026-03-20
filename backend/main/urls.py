@@ -18,10 +18,27 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path, re_path
 from django.views.static import serve
+from dj_rest_auth.registration.views import (
+    RegisterView,
+    ResendEmailVerificationView,
+    VerifyEmailView,
+)
+
+from main.views import PasswordResetConfirmRedirectView
 
 urlpatterns = [
     path('__admin__/', admin.site.urls),
     path('__debug2__/', include('silk.urls', namespace='silk')),
+    path('accounts/', include('allauth.urls')),
+    path('api/auth/', include('dj_rest_auth.urls')),
+    path(
+        'api/auth/password/reset/confirm/<str:uid>/<str:token>/',
+        PasswordResetConfirmRedirectView.as_view(),
+        name='password_reset_confirm',
+    ),
+    path('api/auth/reg/', RegisterView.as_view(), name='rest_register'),
+    path('api/auth/reg/verify-email/', VerifyEmailView.as_view(), name='rest_verify_email'),
+    path('api/auth/reg/resend-email/', ResendEmailVerificationView.as_view(), name='rest_resend_email'),
 ]
 
 if settings.DEBUG:

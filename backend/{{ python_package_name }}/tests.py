@@ -1,13 +1,18 @@
 import io
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import pyvips
 from PIL import Image
+from allauth.account.models import EmailAddress
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
 from django.test import TestCase, override_settings
+
+from main.utils.auth.account_adapter import ProjectAccountAdapter
 
 
 class SmokeDatabaseTestCase(TestCase):
@@ -53,3 +58,137 @@ class UserModelTests(TestCase):
                 output_image = pyvips.Image.new_from_file(str(saved_file))
                 self.assertLessEqual(output_image.width, 300)
                 self.assertLessEqual(output_image.height, 300)
+
+
+@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+class AuthApiTests(TestCase):
+    def test_registration_sends_a_verification_email(self):
+        with patch.object(
+            ProjectAccountAdapter,
+            'send_confirmation_mail',
+            autospec=True,
+        ) as send_confirmation_mail_mock:
+            response = self.client.post(
+                '/api/auth/reg/',
+                {
+                    'email': 'new-user@example.com',
+                    'password1': 'VeryStrongPassword123!',
+                    'password2': 'VeryStrongPassword123!',
+                },
+            )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json(), {'detail': 'Verification e-mail sent.'})
+
+        user = get_user_model().objects.get(email='new-user@example.com')
+        email_address = EmailAddress.objects.get(user=user, email='new-user@example.com')
+
+        self.assertTrue(user.username)
+        self.assertFalse(email_address.verified)
+        send_confirmation_mail_mock.assert_called_once()
+        self.assertEqual(
+            send_confirmation_mail_mock.call_args.args[2].email_address.email,
+            'new-user@example.com',
+        )
+        self.assertTrue(send_confirmation_mail_mock.call_args.args[3])
+
+    def test_unverified_user_cannot_log_in(self):
+        self.client.post(
+            '/api/auth/reg/',
+            {
+                'email': 'pending-user@example.com',
+                'password1': 'VeryStrongPassword123!',
+                'password2': 'VeryStrongPassword123!',
+            },
+        )
+
+        response = self.client.post(
+            '/api/auth/login/',
+            {
+                'email': 'pending-user@example.com',
+                'password': 'VeryStrongPassword123!',
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_verified_user_can_log_in_with_email_and_get_a_token(self):
+        user = get_user_model().objects.create_user(
+            username='verified-user',
+            email='verified-user@example.com',
+            password='VeryStrongPassword123!',
+        )
+        EmailAddress.objects.create(
+            user=user,
+            email=user.email,
+            verified=True,
+            primary=True,
+        )
+
+        response = self.client.post(
+            '/api/auth/login/',
+            {
+                'email': user.email,
+                'password': 'VeryStrongPassword123!',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('key', response.json())
+
+    def test_user_endpoint_returns_profile_photo_field(self):
+        user = get_user_model().objects.create_user(
+            username='profile-user',
+            email='profile-user@example.com',
+            password='VeryStrongPassword123!',
+        )
+        EmailAddress.objects.create(
+            user=user,
+            email=user.email,
+            verified=True,
+            primary=True,
+        )
+
+        login_response = self.client.post(
+            '/api/auth/login/',
+            {
+                'email': user.email,
+                'password': 'VeryStrongPassword123!',
+            },
+        )
+        token = login_response.json()['key']
+
+        response = self.client.get(
+            '/api/auth/user/',
+            HTTP_AUTHORIZATION=f'Token {token}',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['email'], user.email)
+        self.assertIn('profile_photo', response.json())
+        self.assertIsNone(response.json()['profile_photo'])
+
+    def test_password_reset_sends_a_templated_plain_text_email(self):
+        user = get_user_model().objects.create_user(
+            username='reset-user',
+            email='reset-user@example.com',
+            password='VeryStrongPassword123!',
+        )
+        EmailAddress.objects.create(
+            user=user,
+            email=user.email,
+            verified=True,
+            primary=True,
+        )
+
+        response = self.client.post(
+            '/api/auth/password/reset/',
+            {
+                'email': user.email,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].subject, 'Reset your password')
+        self.assertIn('/api/auth/password/reset/confirm/', mail.outbox[0].body)
