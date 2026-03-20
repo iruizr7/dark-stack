@@ -1,0 +1,37 @@
+import logging
+
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+
+from {{ python_package_name }}.utils.image_processing import check_imagefield, reduce_imagefield
+
+logger = logging.getLogger(__name__)
+
+
+def user_profile_photo_uploader(instance, filename):
+    return f'user_profiles/u_{instance.id}_{filename}'
+
+
+class User(AbstractUser):
+    profile_photo = models.ImageField(
+        verbose_name='Profile Photo',
+        null=True,
+        blank=True,
+        upload_to=user_profile_photo_uploader,
+    )
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            old_instance = User.objects.get(pk=self.pk)
+            has_updated_image = (
+                check_imagefield(self.profile_photo)
+                and self.profile_photo != old_instance.profile_photo
+            )
+        else:
+            has_updated_image = check_imagefield(self.profile_photo)
+
+        if has_updated_image and not kwargs.pop('already_converted', False):
+            logger.info('Profile photo updated, processing input image')
+            reduce_imagefield(self, 'profile_photo', 300, 300, 'avif')
+
+        super().save(*args, **kwargs)

@@ -96,6 +96,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'mediafiles')
 WELL_KNOWN_ROOT = BASE_DIR.parent / 'well-known'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+AUTH_USER_MODEL = '{{ python_package_name }}.User'
 
 LOGGING = {
     'version': 1,
@@ -114,6 +115,14 @@ LOGGING = {
     'root': {
         'handlers': ['console'],
         'level': 'DEBUG',
+    },
+    'loggers': {
+        'PIL': {
+            'level': 'INFO',
+        },
+        'pyvips': {
+            'level': 'INFO',
+        },
     },
 }
 

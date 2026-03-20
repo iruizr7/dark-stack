@@ -107,6 +107,24 @@ ensure_postgres() {
   wait_for_postgres
 }
 
+create_smoke_database() {
+  local database_name="$1"
+
+  docker run --rm --network host \
+    -e PGPASSWORD=django \
+    "$SMOKE_POSTGRES_IMAGE" \
+    psql -h 127.0.0.1 -U django -d postgres \
+    -c "DROP DATABASE IF EXISTS \"$database_name\" WITH (FORCE);" \
+    -c "CREATE DATABASE \"$database_name\" OWNER django;" >/dev/null
+}
+
+configure_project_database() {
+  local project_dir="$1"
+  local database_name="$2"
+
+  sed -i "s/'NAME': 'django'/'NAME': '$database_name'/" "$project_dir/backend/main/local_settings.py"
+}
+
 run_backend_checks() {
   local project_dir="$1"
   local use_asgi="$2"
@@ -181,6 +199,8 @@ run_scenario() {
     local temp_dir
     temp_dir="$(mktemp -d)"
     local project_dir="$temp_dir/project"
+    local database_name
+    database_name="dark_stack_${scenario//-/_}"
 
     cleanup() {
       rm -rf "$temp_dir"
@@ -192,6 +212,8 @@ run_scenario() {
     echo "==> Temporary directory: $temp_dir"
 
     generate_project "$project_dir" "$include_frontend" "$use_asgi"
+    create_smoke_database "$database_name"
+    configure_project_database "$project_dir" "$database_name"
     run_backend_checks "$project_dir" "$use_asgi"
 
     if [[ "$include_frontend" == "true" ]]; then
