@@ -1,0 +1,40 @@
+services:
+  webapp:
+    image: {{ project_slug }}:${BACKEND_IMAGE_VERSION}
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - docker-compose.env
+    depends_on:
+      - postgresql
+{% if use_celery %}
+      - valkey
+{% endif %}
+    volumes:
+      - "./backend/mediafiles:/home/app/web/backend/mediafiles"
+{% if enable_push_notifications %}
+      - "./firebase-creds.json:/home/app/web/firebase-creds.json:ro"
+{% endif %}
+
+{% if use_celery %}
+  valkey:
+    image: valkey/valkey:9
+    restart: always
+    command: ["valkey-server", "--requirepass", "django"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - "./redis:/data"
+
+{% endif %}
+  postgresql:
+    image: postgres:17
+    restart: always
+    environment:
+      - "POSTGRES_USER=django"
+      - "POSTGRES_PASSWORD=django"
+      - "POSTGRES_DB=django"
+      - "PGDATA=/var/lib/postgresql/data/pgdata"
+    volumes:
+      - "./pgdata:/var/lib/postgresql/data"

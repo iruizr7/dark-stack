@@ -1,0 +1,132 @@
+#!/bin/bash
+
+set -euo pipefail
+
+APP_HOME="/home/app/web"
+BACKEND_HOME="$APP_HOME/backend"
+
+envs=(
+    ALLOWED_HOSTS
+    CSRF_TRUSTED_ORIGINS
+    SECRET_KEY
+    DB_HOST
+    DB_USER
+    DB_PASSWORD
+    DB_NAME
+{% if use_celery -%}
+    REDIS_STRING
+{% endif -%}
+    EMAIL_HOST
+    EMAIL_PORT
+    EMAIL_HOST_USER
+    EMAIL_HOST_PASSWORD
+    EMAIL_USE_TLS
+    SENTRY_DSN
+{% if enable_push_notifications -%}
+    FIREBASE_SERVICE_ACCOUNT_FILE
+{% endif -%}
+    FRONTEND_URL
+    BACKEND_URL
+    SILKY_INTERCEPT_PERCENT
+    SENTRY_ENVIRONMENT
+)
+
+have_config=
+for e in "${envs[@]}"; do
+    if [[ -z "$have_config" ]] && [[ -n "${!e:-}" ]]; then
+        have_config=1
+    fi
+done
+
+if [[ -n "$have_config" ]]; then
+    echo "Runtime configuration detected, generating backend/main/local_settings.py"
+
+{% if enable_push_notifications -%}
+    firebase_service_account_file_setting="None"
+    if [[ -n "${FIREBASE_SERVICE_ACCOUNT_FILE:-}" ]]; then
+        firebase_service_account_file_setting="'${FIREBASE_SERVICE_ACCOUNT_FILE}'"
+    fi
+{% endif -%}
+
+    cat <<EOF > "$BACKEND_HOME/main/local_settings.py"
+DEBUG = False
+ALLOWED_HOSTS = [${ALLOWED_HOSTS:-'\"localhost\"'}]
+CSRF_TRUSTED_ORIGINS = [${CSRF_TRUSTED_ORIGINS:-}]
+SECRET_KEY = '${SECRET_KEY:-change-me}'
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': '${DB_NAME:-django}',
+        'USER': '${DB_USER:-django}',
+        'PASSWORD': '${DB_PASSWORD:-django}',
+        'HOST': '${DB_HOST:-postgresql}',
+        'PORT': '',
+        "OPTIONS": {
+            "pool": True,
+        },
+    }
+}
+{% if use_celery -%}
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("${REDIS_STRING:-redis://:django@valkey:6379/0}")],
+        },
+    },
+}
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": "${REDIS_STRING:-redis://:django@valkey:6379/0}",
+    }
+}
+
+CELERY_BROKER_URL = '${REDIS_STRING:-redis://:django@valkey:6379/0}'
+{% endif -%}
+
+EMAIL_HOST = '${EMAIL_HOST:-localhost}'
+EMAIL_PORT = ${EMAIL_PORT:-25}
+EMAIL_HOST_USER = '${EMAIL_HOST_USER:-}'
+EMAIL_HOST_PASSWORD = '${EMAIL_HOST_PASSWORD:-}'
+EMAIL_USE_TLS = ${EMAIL_USE_TLS:-False}
+
+DEFAULT_FROM_EMAIL = '{{ project_name }} <noreply@example.com>'
+{% if enable_push_notifications -%}
+FIREBASE_SERVICE_ACCOUNT_FILE = ${firebase_service_account_file_setting}
+{% endif -%}
+
+SENTRY_DSN = "${SENTRY_DSN:-}"
+SENTRY_ENVIRONMENT = '${SENTRY_ENVIRONMENT:-production}'
+
+FRONTEND_URL = '${FRONTEND_URL:-{{ frontend_url }}}'
+BACKEND_URL = '${BACKEND_URL:-{{ backend_url }}}'
+
+SILKY_INTERCEPT_PERCENT = ${SILKY_INTERCEPT_PERCENT:-0}
+EOF
+
+    echo "Waiting for database availability"
+    until pg_isready -h "${DB_HOST:-postgresql}" -U "${DB_USER:-django}" -d "${DB_NAME:-django}"; do
+        echo "Database not ready yet, retrying in 15 seconds" >&2
+        sleep 15
+    done
+
+    if [[ "${RUN_MIGRATIONS:-true}" == "true" ]]; then
+        echo "Running migrations and collectstatic"
+        (
+            cd "$BACKEND_HOME"
+            python manage.py migrate --noinput
+            python manage.py collectstatic -c --noinput
+        )
+    fi
+else
+    echo "No runtime configuration detected"
+fi
+
+for e in "${envs[@]}"; do
+    unset "$e" || true
+done
+
+cd "$BACKEND_HOME"
+exec "$@"

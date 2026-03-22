@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  webapp:
+    image: {{ project_slug }}:${BACKEND_IMAGE_VERSION}
+    env_file:
+      - docker-compose.env
+    volumes:
+      - "mediafiles:/home/app/web/backend/mediafiles"
+{% if enable_push_notifications %}
+      - "/run/secrets/{{ project_slug }}-firebase-creds.json:/home/app/web/firebase-creds.json:ro"
+{% endif %}
+    networks:
+      - traefik-public
+      - {{ project_slug }}-net
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-public
+        - traefik.constraint-label=traefik-public
+        - traefik.http.routers.{{ project_slug }}-http.rule=Host(`{{ project_slug }}.example.com`)
+        - traefik.http.routers.{{ project_slug }}-http.entrypoints=http
+        - traefik.http.routers.{{ project_slug }}-http.middlewares=https-redirect
+        - traefik.http.routers.{{ project_slug }}-https.rule=Host(`{{ project_slug }}.example.com`)
+        - traefik.http.routers.{{ project_slug }}-https.entrypoints=https
+        - traefik.http.routers.{{ project_slug }}-https.tls=true
+        - traefik.http.routers.{{ project_slug }}-https.tls.certresolver=le
+        - traefik.http.services.{{ project_slug }}.loadbalancer.server.port=8080
+
+{% if use_celery %}
+  valkey:
+    image: valkey/valkey:9
+    command: ["valkey-server", "--requirepass", "django"]
+    networks:
+      - {{ project_slug }}-net
+    volumes:
+      - redis:/data
+
+{% endif %}
+volumes:
+  mediafiles:
+{% if use_celery %}
+  redis:
+{% endif %}
+
+networks:
+  traefik-public:
+    external: true
+  {{ project_slug }}-net:
