@@ -18,6 +18,40 @@ services:
 {% endif %}
 
 {% if use_celery %}
+  worker:
+    image: {{ project_slug }}:${BACKEND_IMAGE_VERSION}
+    restart: always
+    command: ['celery', '-A', 'main', 'worker', '-l', 'INFO']
+    env_file:
+      - docker-compose.env
+    environment:
+      - "RUN_MIGRATIONS=false"
+    depends_on:
+      - postgresql
+      - valkey
+    volumes:
+      - "./backend/mediafiles:/home/app/web/backend/mediafiles"
+{% if enable_push_notifications %}
+      - "./firebase-creds.json:/home/app/web/firebase-creds.json:ro"
+{% endif %}
+
+  scheduler:
+    image: {{ project_slug }}:${BACKEND_IMAGE_VERSION}
+    restart: always
+    command: ['celery', '-A', 'main', 'beat', '-l', 'INFO']
+    env_file:
+      - docker-compose.env
+    environment:
+      - "RUN_MIGRATIONS=false"
+    depends_on:
+      - postgresql
+      - valkey
+    volumes:
+      - "./backend/mediafiles:/home/app/web/backend/mediafiles"
+{% if enable_push_notifications %}
+      - "./firebase-creds.json:/home/app/web/firebase-creds.json:ro"
+{% endif %}
+
   valkey:
     image: valkey/valkey:9
     restart: always

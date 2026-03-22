@@ -28,6 +28,36 @@ services:
         - traefik.http.services.{{ project_slug }}.loadbalancer.server.port=8080
 
 {% if use_celery %}
+  worker:
+    image: {{ project_slug }}:${BACKEND_IMAGE_VERSION}
+    command: ['celery', '-A', 'main', 'worker', '-l', 'INFO']
+    env_file:
+      - docker-compose.env
+    environment:
+      - "RUN_MIGRATIONS=false"
+    volumes:
+      - "mediafiles:/home/app/web/backend/mediafiles"
+{% if enable_push_notifications %}
+      - "/run/secrets/{{ project_slug }}-firebase-creds.json:/home/app/web/firebase-creds.json:ro"
+{% endif %}
+    networks:
+      - {{ project_slug }}-net
+
+  scheduler:
+    image: {{ project_slug }}:${BACKEND_IMAGE_VERSION}
+    command: ['celery', '-A', 'main', 'beat', '-l', 'INFO']
+    env_file:
+      - docker-compose.env
+    environment:
+      - "RUN_MIGRATIONS=false"
+    volumes:
+      - "mediafiles:/home/app/web/backend/mediafiles"
+{% if enable_push_notifications %}
+      - "/run/secrets/{{ project_slug }}-firebase-creds.json:/home/app/web/firebase-creds.json:ro"
+{% endif %}
+    networks:
+      - {{ project_slug }}-net
+
   valkey:
     image: valkey/valkey:9
     command: ["valkey-server", "--requirepass", "django"]
