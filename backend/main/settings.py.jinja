@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'dj_rest_auth',
     'dj_rest_auth.registration',
-    'templated_email',
+    'main.utils.templated_email_compat.TemplatedEmailCompatConfig',
     'django_cleanup.apps.CleanupConfig',
 {% if use_celery -%}
     'django_celery_results',
