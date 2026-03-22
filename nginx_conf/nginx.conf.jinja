@@ -6,6 +6,11 @@ events {
 }
 
 http {
+    map $http_x_forwarded_proto $upstream_forwarded_proto {
+        default $http_x_forwarded_proto;
+        "" $scheme;
+    }
+
     client_body_temp_path /home/app/web/tmp/client_body_temp;
     fastcgi_temp_path /home/app/web/tmp/fastcgi_temp;
     proxy_temp_path /home/app/web/tmp/proxy_temp;
