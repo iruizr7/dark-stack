@@ -20,9 +20,12 @@ dependencies = [
 {% endif -%}
     "django-cleanup>=9.0.0",
     "django-cors-headers>=4.9.0",
+    "django-filter>=25.2",
     "django-silk>=5.5.0",
     "django-templated-email>=3.1.1",
     "djangorestframework>=3.17.0",
+    "djangorestframework-jsonapi~=7.1.0",
+    "enhanced-drf-jsonapi>=1.0.6",
 {% if enable_push_notifications -%}
     "fcm-django>=2.3.1",
     "firebase-admin>=7.1.0",
@@ -35,3 +38,11 @@ dependencies = [
     "requests>=2.32.5",
     "sentry-sdk>=2.55.0",
 ]
+
+[tool.uv.sources]
+enhanced-drf-jsonapi = { index = "ruiz-public" }
+
+[[tool.uv.index]]
+name = "ruiz-public"
+url = "https://git.ruiz.wang/api/packages/Public/pypi/simple/"
+explicit = true

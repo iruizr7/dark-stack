@@ -7,6 +7,23 @@ import {{ python_package_name }}.models
 from django.db import migrations, models
 
 
+def create_initial_example_message(apps, schema_editor):
+    ExampleMessage = apps.get_model('{{ python_package_name }}', 'ExampleMessage')
+    ExampleMessage.objects.create(
+        title='JSON:API is ready',
+        body=(
+            'This sample resource comes from the Django backend through a JSON:API '
+            'endpoint and is consumed by the Ionic frontend with ngx-jsonapi.'
+        ),
+        is_published=True,
+    )
+
+
+def delete_initial_example_message(apps, schema_editor):
+    ExampleMessage = apps.get_model('{{ python_package_name }}', 'ExampleMessage')
+    ExampleMessage.objects.filter(title='JSON:API is ready').delete()
+
+
 class Migration(migrations.Migration):
 
     initial = True
@@ -43,4 +60,18 @@ class Migration(migrations.Migration):
                 ('objects', django.contrib.auth.models.UserManager()),
             ],
         ),
+        migrations.CreateModel(
+            name='ExampleMessage',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('title', models.CharField(max_length=200)),
+                ('body', models.TextField()),
+                ('is_published', models.BooleanField(default=True)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+            ],
+            options={
+                'ordering': ('id',),
+            },
+        ),
+        migrations.RunPython(create_initial_example_message, delete_initial_example_message),
     ]

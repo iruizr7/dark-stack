@@ -1,0 +1,18 @@
+from enhanced_drf_jsonapi.api import ReasonableModelSerializer
+
+from {{ python_package_name }}.models import ExampleMessage
+
+
+class ExampleMessageSerializer(ReasonableModelSerializer):
+    class Meta:
+        model = ExampleMessage
+        fields = [
+            'title',
+            'body',
+            'created_at',
+        ]
+        extra_kwargs = {
+            'title': {'read_only': True},
+            'body': {'read_only': True},
+            'created_at': {'read_only': True},
+        }

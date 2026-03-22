@@ -1,20 +1,43 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>
-      Blank
-    </ion-title>
+    <ion-title>JSON:API Sample</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
   <ion-header collapse="condense">
     <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
+      <ion-title size="large">JSON:API Sample</ion-title>
     </ion-toolbar>
   </ion-header>
 
   <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Template wiring check</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        This screen loads a public JSON:API resource from the Django backend through
+        <code>ngx-jsonapi</code>.
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="isLoading()">
+      <ion-card-content>Loading sample content...</ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="errorMessage() as error">
+      <ion-card-content>{{ error }}</ion-card-content>
+    </ion-card>
+
+    <ion-list *ngIf="exampleMessages().length > 0">
+      <ion-item *ngFor="let message of exampleMessages()">
+        <ion-label>
+          <h2>{{ message.title }}</h2>
+          <p>{{ message.body }}</p>
+          <p>Created at: {{ message.createdAt | date:'medium' }}</p>
+        </ion-label>
+      </ion-item>
+    </ion-list>
   </div>
 </ion-content>

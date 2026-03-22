@@ -1,0 +1,86 @@
+import json
+
+from rest_framework.renderers import JSONRenderer as DRFJSONRenderer
+from rest_framework_json_api.renderers import JSONRenderer as JSONAPIRenderer
+
+
+class DependencyOrderedJSONRenderer(JSONAPIRenderer):
+    """
+    ngx-jsonapi hydrates included resources sequentially and relies on cache lookups
+    for nested relationships. Order included resources so dependencies are rendered
+    before dependants.
+    """
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        rendered = super().render(data, accepted_media_type=accepted_media_type, renderer_context=renderer_context)
+        if not rendered:
+            return rendered
+
+        try:
+            payload = json.loads(rendered)
+        except (TypeError, ValueError):
+            return rendered
+
+        included = payload.get('included')
+        if not isinstance(included, list) or len(included) < 2:
+            return rendered
+
+        payload['included'] = self._order_included(included)
+        return DRFJSONRenderer.render(self, payload, accepted_media_type=accepted_media_type, renderer_context=renderer_context)
+
+    def _order_included(self, included):
+        items_by_key = {}
+        for item in included:
+            resource_type = item.get('type')
+            resource_id = item.get('id')
+            if resource_type and resource_id:
+                items_by_key[(resource_type, resource_id)] = item
+
+        ordered = []
+        visiting = set()
+        visited = set()
+
+        for key in sorted(items_by_key):
+            self._visit_included(key, items_by_key, visiting, visited, ordered)
+
+        return ordered
+
+    def _visit_included(self, key, items_by_key, visiting, visited, ordered):
+        if key in visited or key in visiting:
+            return
+
+        visiting.add(key)
+        item = items_by_key[key]
+
+        for dependency_key in self._iter_dependency_keys(item):
+            if dependency_key in items_by_key:
+                self._visit_included(dependency_key, items_by_key, visiting, visited, ordered)
+
+        visiting.remove(key)
+        visited.add(key)
+        ordered.append(item)
+
+    def _iter_dependency_keys(self, item):
+        relationships = item.get('relationships') or {}
+        for relationship in relationships.values():
+            data = relationship.get('data')
+            if isinstance(data, list):
+                for nested in data:
+                    dependency_key = self._identifier_key(nested)
+                    if dependency_key:
+                        yield dependency_key
+                continue
+
+            dependency_key = self._identifier_key(data)
+            if dependency_key:
+                yield dependency_key
+
+    def _identifier_key(self, data):
+        if not isinstance(data, dict):
+            return None
+
+        resource_type = data.get('type')
+        resource_id = data.get('id')
+        if not resource_type or not resource_id:
+            return None
+        return resource_type, resource_id

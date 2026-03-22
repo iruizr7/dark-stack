@@ -15,6 +15,7 @@ from django.test import TestCase, override_settings
 from fcm_django.models import FCMDevice
 {% endif %}
 
+from {{ python_package_name }}.models import ExampleMessage
 from main.utils.auth.account_adapter import ProjectAccountAdapter
 
 
@@ -61,6 +62,27 @@ class UserModelTests(TestCase):
                 output_image = pyvips.Image.new_from_file(str(saved_file))
                 self.assertLessEqual(output_image.width, 300)
                 self.assertLessEqual(output_image.height, 300)
+
+
+class JsonApiExampleTests(TestCase):
+    def test_example_messages_endpoint_returns_public_jsonapi_payload(self):
+        response = self.client.get(
+            '/api/example-messages',
+            HTTP_ACCEPT='application/vnd.api+json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        payload = response.json()
+        self.assertIn('data', payload)
+        self.assertGreaterEqual(len(payload['data']), 1)
+
+        example_message = ExampleMessage.objects.get(title='JSON:API is ready')
+        example_resource = payload['data'][0]
+
+        self.assertEqual(example_resource['type'], 'ExampleMessage')
+        self.assertEqual(example_resource['attributes']['title'], example_message.title)
+        self.assertEqual(example_resource['attributes']['body'], example_message.body)
 
 
 @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')

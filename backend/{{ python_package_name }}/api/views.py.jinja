@@ -1,0 +1,21 @@
+from enhanced_drf_jsonapi.api import ReasonableModelViewSet, text_filter
+from rest_framework.permissions import AllowAny
+
+from {{ python_package_name }}.api.serializers import ExampleMessageSerializer
+from {{ python_package_name }}.models import ExampleMessage
+
+
+class ExampleMessageView(ReasonableModelViewSet):
+    queryset = ExampleMessage.objects.filter(is_published=True)
+    serializer_class = ExampleMessageSerializer
+    permission_classes = [AllowAny]
+    http_method_names = ['get', 'head', 'options']
+    ordering = ('id',)
+    search_fields = ('title', 'body')
+    filterset_fields = {
+        'title': text_filter,
+    }
+
+    def get_queryset(self, *args, **kwargs):
+        qs = super().get_queryset(*args, **kwargs)
+        return qs.filter(is_published=True).order_by('id')

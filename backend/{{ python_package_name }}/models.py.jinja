@@ -35,3 +35,16 @@ class User(AbstractUser):
             reduce_imagefield(self, 'profile_photo', 300, 300, 'avif')
 
         super().save(*args, **kwargs)
+
+
+class ExampleMessage(models.Model):
+    title = models.CharField(max_length=200)
+    body = models.TextField()
+    is_published = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('id',)
+
+    def __str__(self):
+        return self.title
