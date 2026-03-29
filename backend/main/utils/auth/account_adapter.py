@@ -2,12 +2,20 @@ import logging
 
 from allauth.account.adapter import DefaultAccountAdapter
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from templated_email import send_templated_mail
 
 logger = logging.getLogger(__name__)
 
 
 class ProjectAccountAdapter(DefaultAccountAdapter):
+    def get_email_confirmation_url(self, request, emailconfirmation):
+        frontend_url = getattr(settings, 'FRONTEND_URL', '').rstrip('/')
+        if not frontend_url:
+            raise ImproperlyConfigured('FRONTEND_URL must be configured to send email verification emails.')
+
+        return f'{frontend_url}/verify-email/{emailconfirmation.key}'
+
     def send_confirmation_mail(self, request, emailconfirmation, signup):
         logger.info(
             'Sending account confirmation email for %s',

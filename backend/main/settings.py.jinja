@@ -102,6 +102,7 @@ CELERY_RESULT_EXTENDED = True
 REST_AUTH = {
     'REGISTER_SERIALIZER': 'main.utils.auth.custom_register_serializer.CustomRegisterSerializer',
     'USER_DETAILS_SERIALIZER': 'main.utils.auth.auth_user_serializer.UserDetailsSerializer',
+    'PASSWORD_RESET_SERIALIZER': 'main.utils.auth.password_reset_serializer.PasswordResetSerializer',
     'LOGOUT_ON_PASSWORD_CHANGE': True,
     'SESSION_LOGIN': False,
 }

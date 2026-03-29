@@ -8,6 +8,7 @@ It is designed as an initial project bootstrapper, not as a long-term parent tem
 
 - `backend/`: Django project scaffold
 - `frontend/`: optional Ionic application
+- minimal email/password auth starter pages for register, login, e-mail verification, and password reset when the frontend is enabled
 - local PostgreSQL development setup through `docker-compose-dev.yaml`
 - `uv`-managed Python dependencies
 - template smoke tests to keep the generator healthy

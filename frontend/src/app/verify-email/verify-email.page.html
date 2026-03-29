@@ -1,0 +1,20 @@
+<ion-content [fullscreen]="true" class="auth-page-content">
+  <div class="auth-page-shell">
+    <section class="auth-card" aria-labelledby="verifyEmailTitle">
+      <h1 id="verifyEmailTitle">Verify e-mail</h1>
+      <p>This page finalizes the e-mail confirmation flow by sending the route key to the backend.</p>
+
+      <div *ngIf="isSubmitting" class="auth-status">
+        <ion-spinner name="crescent"></ion-spinner>
+        <span>Verifying your e-mail address...</span>
+      </div>
+
+      <div *ngIf="successMessage" class="auth-alert auth-alert-success">{{ successMessage }}</div>
+      <div *ngIf="errorMessage" class="auth-alert auth-alert-error">{{ errorMessage }}</div>
+
+      <div *ngIf="!isSubmitting" class="auth-links">
+        <a routerLink="/login">Go to sign in</a>
+      </div>
+    </section>
+  </div>
+</ion-content>
