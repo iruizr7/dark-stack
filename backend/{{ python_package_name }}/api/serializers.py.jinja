@@ -1,6 +1,21 @@
 from enhanced_drf_jsonapi.api import ReasonableModelSerializer
+from rest_framework import serializers
 
+from {{ python_package_name }}.models import User
 from {{ python_package_name }}.models import ExampleMessage
+
+
+class AbsoluteImageField(serializers.ImageField):
+    def to_representation(self, value):
+        if not value:
+            return None
+
+        representation = super().to_representation(value)
+        request = self.context.get('request')
+        if request is None:
+            return representation
+
+        return request.build_absolute_uri(representation)
 
 
 class ExampleMessageSerializer(ReasonableModelSerializer):
@@ -15,4 +30,20 @@ class ExampleMessageSerializer(ReasonableModelSerializer):
             'title': {'read_only': True},
             'body': {'read_only': True},
             'created_at': {'read_only': True},
+        }
+
+
+class ExampleProfileSerializer(ReasonableModelSerializer):
+    profile_photo = AbsoluteImageField(required=False, allow_null=True)
+
+    class Meta:
+        model = User
+        fields = [
+            'email',
+            'first_name',
+            'last_name',
+            'profile_photo',
+        ]
+        extra_kwargs = {
+            'email': {'read_only': True},
         }

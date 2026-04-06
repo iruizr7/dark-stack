@@ -1,8 +1,8 @@
 from enhanced_drf_jsonapi.api import ReasonableModelViewSet, text_filter
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
-from {{ python_package_name }}.api.serializers import ExampleMessageSerializer
-from {{ python_package_name }}.models import ExampleMessage
+from {{ python_package_name }}.api.serializers import ExampleMessageSerializer, ExampleProfileSerializer
+from {{ python_package_name }}.models import ExampleMessage, User
 
 
 class ExampleMessageView(ReasonableModelViewSet):
@@ -19,3 +19,15 @@ class ExampleMessageView(ReasonableModelViewSet):
     def get_queryset(self, *args, **kwargs):
         qs = super().get_queryset(*args, **kwargs)
         return qs.filter(is_published=True).order_by('id')
+
+
+class ExampleProfileView(ReasonableModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = ExampleProfileSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'patch', 'head', 'options']
+    ordering = ('id',)
+
+    def get_queryset(self, *args, **kwargs):
+        qs = super().get_queryset(*args, **kwargs)
+        return qs.filter(pk=self.request.user.pk).order_by('id')

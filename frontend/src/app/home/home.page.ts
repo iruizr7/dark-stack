@@ -1,6 +1,8 @@
 import { DatePipe, NgFor, NgIf } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import {
+  IonButton,
   IonCard,
   IonCardContent,
   IonCardHeader,
@@ -15,6 +17,7 @@ import {
 } from '@ionic/angular/standalone';
 
 import { ExampleMessageCard, ExampleMessageService } from '../shared/services/jsonapi-services/example-message.service';
+import { AuthService } from '../shared/services/auth.service';
 
 @Component({
   selector: 'app-home',
@@ -24,6 +27,8 @@ import { ExampleMessageCard, ExampleMessageService } from '../shared/services/js
     NgFor,
     NgIf,
     DatePipe,
+    RouterLink,
+    IonButton,
     IonCard,
     IonCardContent,
     IonCardHeader,
@@ -39,10 +44,12 @@ import { ExampleMessageCard, ExampleMessageService } from '../shared/services/js
 })
 export class HomePage implements OnInit {
   private readonly exampleMessageService = inject(ExampleMessageService);
+  private readonly authService = inject(AuthService);
 
   protected readonly exampleMessages = signal<ExampleMessageCard[]>([]);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly isLoading = signal(true);
+  protected readonly isAuthenticated = this.authService.isAuthenticated;
 
   public ngOnInit(): void {
     void this.loadExampleMessages();

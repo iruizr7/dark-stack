@@ -1,0 +1,45 @@
+#container {
+  padding: 16px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.profile-form {
+  display: grid;
+  gap: 16px;
+}
+
+.photo-preview img {
+  display: block;
+  width: 128px;
+  height: 128px;
+  object-fit: cover;
+  border-radius: 16px;
+}
+
+.file-input {
+  display: grid;
+  gap: 8px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.message {
+  margin: 0 0 12px;
+}
+
+.message.error {
+  color: #b42318;
+}
+
+.message.success {
+  color: #027a48;
+}
+
+ion-spinner {
+  margin-right: 8px;
+}

@@ -10,6 +10,7 @@ from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
 from django.test import TestCase, override_settings
+from rest_framework.test import APIClient
 {% if enable_push_notifications %}
 from fcm_django.models import FCMDevice
 {% endif %}
@@ -81,6 +82,112 @@ class JsonApiExampleTests(TestCase):
         self.assertEqual(example_resource['type'], 'ExampleMessage')
         self.assertEqual(example_resource['attributes']['title'], example_message.title)
         self.assertEqual(example_resource['attributes']['body'], example_message.body)
+
+    def test_profiles_endpoint_returns_only_the_authenticated_user(self):
+        user = get_user_model().objects.create_user(
+            username='profile-owner',
+            email='profile-owner@example.com',
+            password='VeryStrongPassword123!',
+            first_name='Ada',
+            last_name='Lovelace',
+        )
+        EmailAddress.objects.create(
+            user=user,
+            email=user.email,
+            verified=True,
+            primary=True,
+        )
+
+        other_user = get_user_model().objects.create_user(
+            username='other-profile',
+            email='other-profile@example.com',
+            password='VeryStrongPassword123!',
+        )
+        EmailAddress.objects.create(
+            user=other_user,
+            email=other_user.email,
+            verified=True,
+            primary=True,
+        )
+
+        login_response = self.client.post(
+            '/api/auth/login/',
+            {
+                'email': user.email,
+                'password': 'VeryStrongPassword123!',
+            },
+        )
+        token = login_response.json()['key']
+
+        response = self.client.get(
+            '/api/profiles',
+            HTTP_ACCEPT='application/vnd.api+json',
+            HTTP_AUTHORIZATION=f'Token {token}',
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        payload = response.json()
+        self.assertEqual(len(payload['data']), 1)
+        self.assertEqual(payload['data'][0]['attributes']['email'], user.email)
+        self.assertEqual(payload['data'][0]['attributes']['first_name'], 'Ada')
+
+    def test_profiles_endpoint_accepts_multipart_updates(self):
+        user = get_user_model().objects.create_user(
+            username='multipart-profile',
+            email='multipart-profile@example.com',
+            password='VeryStrongPassword123!',
+        )
+        EmailAddress.objects.create(
+            user=user,
+            email=user.email,
+            verified=True,
+            primary=True,
+        )
+
+        login_response = self.client.post(
+            '/api/auth/login/',
+            {
+                'email': user.email,
+                'password': 'VeryStrongPassword123!',
+            },
+        )
+        token = login_response.json()['key']
+
+        image_bytes = io.BytesIO()
+        Image.new('RGB', (800, 600), color='blue').save(image_bytes, format='PNG')
+        image_bytes.seek(0)
+
+        api_client = APIClient()
+        api_client.credentials(HTTP_ACCEPT='application/vnd.api+json', HTTP_AUTHORIZATION=f'Token {token}')
+
+        with tempfile.TemporaryDirectory() as temp_media_root:
+            with override_settings(MEDIA_ROOT=temp_media_root):
+                response = api_client.patch(
+                    f'/api/profiles/{user.pk}',
+                    {
+                        'first_name': 'Grace',
+                        'last_name': 'Hopper',
+                        'profile_photo': SimpleUploadedFile(
+                            'avatar.png',
+                            image_bytes.getvalue(),
+                            content_type='image/png',
+                        ),
+                    },
+                    format='multipart',
+                )
+
+                self.assertEqual(response.status_code, 200)
+
+                user.refresh_from_db()
+                self.assertEqual(user.first_name, 'Grace')
+                self.assertEqual(user.last_name, 'Hopper')
+                self.assertTrue(user.profile_photo.name.endswith('.avif'))
+
+                payload = response.json()
+                self.assertEqual(payload['data']['attributes']['first_name'], 'Grace')
+                self.assertEqual(payload['data']['attributes']['last_name'], 'Hopper')
+                self.assertIn('/media/', payload['data']['attributes']['profile_photo'])
 
 
 @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')

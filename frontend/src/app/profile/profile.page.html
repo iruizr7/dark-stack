@@ -1,0 +1,65 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>User Profile</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">User Profile</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div id="container">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Profile details</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        Update your name and profile photo from a single authenticated form.
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="isLoading">
+      <ion-card-content>Loading profile…</ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="!isLoading">
+      <ion-card-content>
+        <p *ngIf="errorMessage" class="message error">{{ errorMessage }}</p>
+        <p *ngIf="successMessage" class="message success">{{ successMessage }}</p>
+
+        <form [formGroup]="profileForm" (ngSubmit)="submit()" class="profile-form">
+          <div class="photo-preview" *ngIf="currentPhotoUrl">
+            <img [src]="currentPhotoUrl" alt="Current profile photo">
+          </div>
+
+          <label class="file-input">
+            <span>Profile photo</span>
+            <input type="file" accept="image/*" (change)="onPhotoSelected($event)">
+          </label>
+
+          <ion-item>
+            <ion-label position="stacked">First name</ion-label>
+            <ion-input formControlName="firstName"></ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-label position="stacked">Last name</ion-label>
+            <ion-input formControlName="lastName"></ion-input>
+          </ion-item>
+
+          <div class="actions">
+            <ion-button type="submit" [disabled]="isSaving">
+              <ion-spinner *ngIf="isSaving" name="crescent"></ion-spinner>
+              <span>{{ isSaving ? 'Saving…' : 'Save profile' }}</span>
+            </ion-button>
+
+            <ion-button fill="outline" routerLink="/home">Back home</ion-button>
+          </div>
+        </form>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

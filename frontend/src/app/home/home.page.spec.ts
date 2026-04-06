@@ -1,14 +1,20 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 
 import { HomePage } from './home.page';
+import { AuthService } from '../shared/services/auth.service';
 import { ExampleMessageService } from '../shared/services/jsonapi-services/example-message.service';
 
 describe('HomePage', () => {
   let component: HomePage;
   let fixture: ComponentFixture<HomePage>;
+  let authService: jasmine.SpyObj<AuthService>;
   let exampleMessageService: jasmine.SpyObj<ExampleMessageService>;
 
   beforeEach(async () => {
+    authService = jasmine.createSpyObj<AuthService>('AuthService', ['isAuthenticated']);
+    authService.isAuthenticated.and.returnValue(false);
+
     exampleMessageService = jasmine.createSpyObj<ExampleMessageService>('ExampleMessageService', [
       'fetchPublishedMessages',
     ]);
@@ -24,6 +30,8 @@ describe('HomePage', () => {
     await TestBed.configureTestingModule({
       imports: [HomePage],
       providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: authService },
         { provide: ExampleMessageService, useValue: exampleMessageService },
       ],
     }).compileComponents();

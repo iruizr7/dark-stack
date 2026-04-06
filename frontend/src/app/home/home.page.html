@@ -22,6 +22,31 @@
       </ion-card-content>
     </ion-card>
 
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>User profile</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p *ngIf="isAuthenticated(); else signInPrompt">
+          The template includes an authenticated profile page where users can update their details
+          and avatar.
+        </p>
+        <ng-template #signInPrompt>
+          <p>Sign in to access the profile page.</p>
+        </ng-template>
+
+        <ion-button *ngIf="isAuthenticated(); else loginButton" routerLink="/profile">
+          Open profile
+        </ion-button>
+
+        <ng-template #loginButton>
+          <ion-button routerLink="/login" [queryParams]="{ returnUrl: '/profile' }">
+            Sign in to try it
+          </ion-button>
+        </ng-template>
+      </ion-card-content>
+    </ion-card>
+
     <ion-card *ngIf="isLoading()">
       <ion-card-content>Loading sample content...</ion-card-content>
     </ion-card>

@@ -1,8 +1,9 @@
 from rest_framework.routers import SimpleRouter
 
-from {{ python_package_name }}.api.views import ExampleMessageView
+from {{ python_package_name }}.api.views import ExampleMessageView, ExampleProfileView
 
 router = SimpleRouter(trailing_slash=False)
 router.register('example-messages', ExampleMessageView, basename='example-message')
+router.register('profiles', ExampleProfileView, basename='example-profile')
 
 urlpatterns = router.urls

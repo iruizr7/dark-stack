@@ -154,18 +154,24 @@ run_frontend_checks() {
   echo "==> Installing frontend dependencies"
   (
     cd "$project_dir/frontend"
+    export CI=1
+    export NG_CLI_ANALYTICS=false
     npm install --no-fund --no-audit
   )
 
   echo "==> Running frontend tests"
   (
     cd "$project_dir/frontend"
+    export CI=1
+    export NG_CLI_ANALYTICS=false
     CHROME_BIN="$CHROME_BIN" npm run test -- --watch=false --browsers=ChromeHeadless
   )
 
   echo "==> Running frontend build"
   (
     cd "$project_dir/frontend"
+    export CI=1
+    export NG_CLI_ANALYTICS=false
     npm run build
   )
 }
